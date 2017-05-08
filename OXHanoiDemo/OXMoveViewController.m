@@ -34,6 +34,7 @@
 @property (nonatomic, strong) NSMutableArray *towerCountArray;// 塔包含的盘子的数量
 @property (nonatomic, strong) NSMutableArray *towerYArray;// 塔高度的Y值
 @property NSInteger waitTime;
+@property BOOL doneAnimation;// 完成动画的标记
 
 @end
 
@@ -133,46 +134,53 @@
 - (void)beginMove {
     self.waitTime = 0;
     self.moveCount = 0;
-    [self hanoiWithDisk:self.diskNumber towers:@"A" :@"B" :@"C"];
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    queue.maxConcurrentOperationCount = 1;
+    
+    dispatch_time_t startTime = dispatch_time(DISPATCH_TIME_NOW, 0);
+    [self hanoiWithDisk:self.diskNumber towers:@"A" :@"B" :@"C" startTime:startTime];
     NSLog(@">>移动了%ld次", self.moveCount);
+    
+    
 }
 
 
 // 移动算法
-- (void)hanoiWithDisk:(NSInteger)diskNumber towers:(NSString *)towerA :(NSString *)towerB :(NSString *)towerC {
+- (void)hanoiWithDisk:(NSInteger)diskNumber towers:(NSString *)towerA :(NSString *)towerB :(NSString *)towerC startTime:(dispatch_time_t)startTime {
     if (diskNumber == 1) {// 只有一个盘子则直接从A塔移动到C塔
         
         NSLock *lock = [[NSLock alloc] init];
         [lock lock];
         double delayInSeconds = 1.0 * self.waitTime;
-        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        dispatch_time_t delayTime = dispatch_time(startTime, (int64_t)(delayInSeconds * NSEC_PER_SEC));
         self.waitTime++;
         [lock unlock];
         WeakSelf
-        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){
             StrongSelf
             if (strongSelf) {
                 [strongSelf move:1 from:towerA to:towerC];
             }
         });
     } else {
-        [self hanoiWithDisk:diskNumber-1 towers:towerA :towerC :towerB];// 递归把A塔上编号1~diskNumber-1的盘子移动到B塔，C塔辅助
+        [self hanoiWithDisk:diskNumber-1 towers:towerA :towerC :towerB startTime:startTime];// 递归把A塔上编号1~diskNumber-1的盘子移动到B塔，C塔辅助
         
         NSLock *lock = [[NSLock alloc] init];
         [lock lock];
         double delayInSeconds = 1.0 * self.waitTime;
-        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        dispatch_time_t delayTime = dispatch_time(startTime, (int64_t)(delayInSeconds * NSEC_PER_SEC));
         self.waitTime++;
         [lock unlock];
         WeakSelf
-        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){
             StrongSelf
             if (strongSelf) {
                 [strongSelf move:diskNumber from:towerA to:towerC];// 把A塔上编号为diskNumber的盘子移动到C塔
             }
         });
         
-        [self hanoiWithDisk:diskNumber-1 towers:towerB :towerA :towerC];// 递归把B塔上编号1~diskNumber-1的盘子移动到C塔，A塔辅助
+        [self hanoiWithDisk:diskNumber-1 towers:towerB :towerA :towerC startTime:startTime];// 递归把B塔上编号1~diskNumber-1的盘子移动到C塔，A塔辅助
         
     }
 }
@@ -215,35 +223,39 @@
                 
             } completion:^(BOOL finished) {
 //                dispatch_semaphore_signal(sema);// 增加信号量
-                
-                // 改变fromTower的盘子数量
-                if ([fromTower isEqualToString:@"A"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:0] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:--count]];
-                } else if ([fromTower isEqualToString:@"B"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:1] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:--count]];
-                } else if ([fromTower isEqualToString:@"C"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:2] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:--count]];
+                StrongSelf
+                if (strongSelf) {
+                    // 改变fromTower的盘子数量
+                    if ([fromTower isEqualToString:@"A"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:0] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:--count]];
+                    } else if ([fromTower isEqualToString:@"B"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:1] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:--count]];
+                    } else if ([fromTower isEqualToString:@"C"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:--count]];
+                    }
+                    
+                    // 改变toTower的盘子数量
+                    if ([toTower isEqualToString:@"A"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:0] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:++count]];
+                    } else if ([toTower isEqualToString:@"B"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:1] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:++count]];
+                    } else if ([toTower isEqualToString:@"C"]) {
+                        NSInteger count = [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
+                        [strongSelf.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:++count]];
+                    }
                 }
                 
-                // 改变toTower的盘子数量
-                if ([toTower isEqualToString:@"A"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:0] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:++count]];
-                } else if ([toTower isEqualToString:@"B"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:1] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:++count]];
-                } else if ([toTower isEqualToString:@"C"]) {
-                    NSInteger count = [[self.towerCountArray objectAtIndex:2] integerValue];
-                    [self.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:++count]];
-                }
             }];
             
             break;
         }
     }
+    
 //    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);// 信号量若没增加，则一直等待
 }
 
