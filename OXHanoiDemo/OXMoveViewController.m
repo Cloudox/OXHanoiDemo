@@ -33,6 +33,7 @@
 @property NSInteger moveCount;// 移动次数
 @property (nonatomic, strong) NSMutableArray *towerCountArray;// 塔包含的盘子的数量
 @property (nonatomic, strong) NSMutableArray *towerYArray;// 塔高度的Y值
+@property NSInteger waitTime;
 
 @end
 
@@ -130,6 +131,7 @@
 
 // 开始移动
 - (void)beginMove {
+    self.waitTime = 0;
     self.moveCount = 0;
     [self hanoiWithDisk:self.diskNumber towers:@"A" :@"B" :@"C"];
     NSLog(@">>移动了%ld次", self.moveCount);
@@ -139,24 +141,53 @@
 // 移动算法
 - (void)hanoiWithDisk:(NSInteger)diskNumber towers:(NSString *)towerA :(NSString *)towerB :(NSString *)towerC {
     if (diskNumber == 1) {// 只有一个盘子则直接从A塔移动到C塔
-        [self move:1 from:towerA to:towerC];
+        
+        NSLock *lock = [[NSLock alloc] init];
+        [lock lock];
+        double delayInSeconds = 1.0 * self.waitTime;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        self.waitTime++;
+        [lock unlock];
+        WeakSelf
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            StrongSelf
+            if (strongSelf) {
+                [strongSelf move:1 from:towerA to:towerC];
+            }
+        });
     } else {
         [self hanoiWithDisk:diskNumber-1 towers:towerA :towerC :towerB];// 递归把A塔上编号1~diskNumber-1的盘子移动到B塔，C塔辅助
-        [self move:diskNumber from:towerA to:towerC];// 把A塔上编号为diskNumber的盘子移动到C塔
+        
+        NSLock *lock = [[NSLock alloc] init];
+        [lock lock];
+        double delayInSeconds = 1.0 * self.waitTime;
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+        self.waitTime++;
+        [lock unlock];
+        WeakSelf
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            StrongSelf
+            if (strongSelf) {
+                [strongSelf move:diskNumber from:towerA to:towerC];// 把A塔上编号为diskNumber的盘子移动到C塔
+            }
+        });
+        
         [self hanoiWithDisk:diskNumber-1 towers:towerB :towerA :towerC];// 递归把B塔上编号1~diskNumber-1的盘子移动到C塔，A塔辅助
+        
     }
 }
 
 // 移动过程
 - (void)move:(NSInteger)diskIndex from:(NSString *)fromTower to:(NSString *)toTower {
-    dispatch_semaphore_t sema = dispatch_semaphore_create(0);// 初始化信号量为0
+//    dispatch_semaphore_t sema = dispatch_semaphore_create(0);// 初始化信号量为0
+    
     NSLog(@"第%ld次移动：把%ld号盘从%@移动到%@", ++self.moveCount, diskIndex, fromTower, toTower);
     
     for (OXDiskModel *disk in self.diskArray) {
         if (disk.index == diskIndex) {
             
             WeakSelf
-            [UIView animateWithDuration:0.5 animations:^{
+            [UIView animateWithDuration:1.0 animations:^{
                 StrongSelf
                 if (strongSelf) {
                     // 改变盘子的位置
@@ -176,16 +207,44 @@
                         hasDiskHieght = diskHeight * [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
                     }
                     
+//                    NSLog(@"盘子%ld 原本的Y值：%f", disk.index, diskCenter.y);
                     diskCenter.y = towerY + (towerHeight - hasDiskHieght) - diskHeight/2;
                     disk.center = diskCenter;
+//                    NSLog(@"盘子%ld 现在的Y值：%f", disk.index, diskCenter.y);
                 }
-                dispatch_semaphore_signal(sema);// 增加信号量
+                
+            } completion:^(BOOL finished) {
+//                dispatch_semaphore_signal(sema);// 增加信号量
+                
+                // 改变fromTower的盘子数量
+                if ([fromTower isEqualToString:@"A"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:0] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:--count]];
+                } else if ([fromTower isEqualToString:@"B"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:1] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:--count]];
+                } else if ([fromTower isEqualToString:@"C"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:2] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:--count]];
+                }
+                
+                // 改变toTower的盘子数量
+                if ([toTower isEqualToString:@"A"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:0] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:++count]];
+                } else if ([toTower isEqualToString:@"B"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:1] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:++count]];
+                } else if ([toTower isEqualToString:@"C"]) {
+                    NSInteger count = [[self.towerCountArray objectAtIndex:2] integerValue];
+                    [self.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:++count]];
+                }
             }];
             
             break;
         }
     }
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);// 信号量若没增加，则一直等待
+//    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);// 信号量若没增加，则一直等待
 }
 
 - (void)didReceiveMemoryWarning {

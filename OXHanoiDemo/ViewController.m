@@ -19,6 +19,7 @@
 @property (nonatomic, strong) UITextField *numberField;// 输入框
 @property NSInteger moveCount;// 移动次数
 
+
 @end
 
 @implementation ViewController
