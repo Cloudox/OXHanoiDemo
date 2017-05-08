@@ -1,12 +1,13 @@
 //
 //  ViewController.m
-//  OXHanoiDemo
+//  OXHanoiDemo 输入层数N的界面
 //
 //  Created by Cloudox on 2017/5/8.
 //  Copyright © 2017年 Cloudox. All rights reserved.
 //
 
 #import "ViewController.h"
+#import "OXMoveViewController.h"
 
 //设备的宽高
 #define SCREENWIDTH       [UIScreen mainScreen].bounds.size.width
@@ -24,6 +25,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.title = @"输入层数";
     self.view.backgroundColor = [UIColor whiteColor];
     
     // 说明文字
@@ -58,11 +60,23 @@
 - (void)submit {
     if ([self.numberField.text isEqualToString:@""]) {
         NSLog(@"未输入内容");
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"提示" message:@"您还未输入层数!" preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        }];
+        [alertController addAction:okAction];
+        [self presentViewController:alertController animated:YES completion:nil];
     } else {
         self.diskNumber = [self.numberField.text integerValue];
-        self.moveCount = 0;
-        [self hanoiWithDisk:self.diskNumber towers:@"A" :@"B" :@"C"];
-        NSLog(@">>移动了%ld次", self.moveCount);
+        
+        OXMoveViewController *moveVC = [[OXMoveViewController alloc] init];
+        moveVC.diskNumber = self.diskNumber;
+        [self.navigationController pushViewController:moveVC animated:YES];
+        
+        
+        
+//        self.moveCount = 0;
+//        [self hanoiWithDisk:self.diskNumber towers:@"A" :@"B" :@"C"];
+//        NSLog(@">>移动了%ld次", self.moveCount);
     }
 }
 

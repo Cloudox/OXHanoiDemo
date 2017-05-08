@@ -15,6 +15,7 @@
 		B876C5601EC0852C0083604F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B876C55E1EC0852C0083604F /* LaunchScreen.storyboard */; };
 		B876C56B1EC0852C0083604F /* OXHanoiDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B876C56A1EC0852C0083604F /* OXHanoiDemoTests.m */; };
 		B876C5761EC0852C0083604F /* OXHanoiDemoUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = B876C5751EC0852C0083604F /* OXHanoiDemoUITests.m */; };
+		B876C5851EC08F220083604F /* OXMoveViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = B876C5841EC08F220083604F /* OXMoveViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,8 @@
 		B876C5711EC0852C0083604F /* OXHanoiDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OXHanoiDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B876C5751EC0852C0083604F /* OXHanoiDemoUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OXHanoiDemoUITests.m; sourceTree = "<group>"; };
 		B876C5771EC0852C0083604F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B876C5831EC08F220083604F /* OXMoveViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OXMoveViewController.h; sourceTree = "<group>"; };
+		B876C5841EC08F220083604F /* OXMoveViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OXMoveViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +108,8 @@
 				B876C5541EC0852B0083604F /* AppDelegate.m */,
 				B876C5561EC0852B0083604F /* ViewController.h */,
 				B876C5571EC0852B0083604F /* ViewController.m */,
+				B876C5831EC08F220083604F /* OXMoveViewController.h */,
+				B876C5841EC08F220083604F /* OXMoveViewController.m */,
 				B876C5591EC0852B0083604F /* Main.storyboard */,
 				B876C55C1EC0852B0083604F /* Assets.xcassets */,
 				B876C55E1EC0852C0083604F /* LaunchScreen.storyboard */,
@@ -275,6 +280,7 @@
 			files = (
 				B876C5581EC0852B0083604F /* ViewController.m in Sources */,
 				B876C5551EC0852B0083604F /* AppDelegate.m in Sources */,
+				B876C5851EC08F220083604F /* OXMoveViewController.m in Sources */,
 				B876C5521EC0852B0083604F /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
