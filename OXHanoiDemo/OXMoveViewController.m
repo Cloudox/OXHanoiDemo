@@ -7,6 +7,7 @@
 //
 
 #import "OXMoveViewController.h"
+#import "OXTowerView.h"
 
 //设备的宽高
 #define SCREENWIDTH       [UIScreen mainScreen].bounds.size.width
@@ -31,8 +32,7 @@
 
 @property (nonatomic, strong) NSMutableArray *diskArray;// 盘子对象数组
 @property NSInteger moveCount;// 移动次数
-@property (nonatomic, strong) NSMutableArray *towerCountArray;// 塔包含的盘子的数量
-@property (nonatomic, strong) NSMutableArray *towerYArray;// 塔高度的Y值
+@property (nonatomic, strong) NSMutableArray *towerArray;// 塔对象数组
 
 @end
 
@@ -44,10 +44,7 @@
     self.view.backgroundColor = [UIColor whiteColor];
     
     self.diskArray = [[NSMutableArray alloc] init];
-    self.towerCountArray = [[NSMutableArray alloc] init];
-    self.towerYArray = [[NSMutableArray alloc] init];
-    
-    [self.towerCountArray addObjectsFromArray:[NSArray arrayWithObjects:[NSNumber numberWithInteger:self.diskNumber], @0, @0, nil]];
+    self.towerArray = [[NSMutableArray alloc] init];
     
     // 添加三座塔
     [self initThreeTower];
@@ -71,31 +68,28 @@
     // 添加三座塔
     NSInteger height = (SCREENHEIGHT - 150)/3 - 30;
     for (int i = 0; i < 3; i++) {
-        // 竖线
-        UIView *verticalView = [[UIView alloc] initWithFrame:CGRectMake((SCREENWIDTH-5)/2, 130 + (height+30)*i, 5, height)];
-        verticalView.backgroundColor = [UIColor darkGrayColor];
-        [self.view addSubview:verticalView];
-        
-        [self.towerYArray addObject:@(130 + (height+30)*i)];
-        
-        // 横线
-        UIView *horizontalView = [[UIView alloc] initWithFrame:CGRectMake((SCREENWIDTH-250)/2, verticalView.frame.origin.y + height, 250, 5)];
-        horizontalView.backgroundColor = [UIColor darkGrayColor];
-        [self.view addSubview:horizontalView];
+        OXTowerView *tower = [[OXTowerView alloc] initWithFrame:CGRectMake((SCREENWIDTH-250)/2, 130 + (height+30)*i, 250, height+5)];
+        tower.diskNumber = 0;
+        [self.view addSubview:tower];
+        [self.towerArray addObject:tower];
         
         // 塔号
-        UILabel *towerLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, horizontalView.frame.origin.y+5, SCREENWIDTH-24, 15)];
+        UILabel *towerLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, tower.frame.origin.y + height + 5, SCREENWIDTH-24, 15)];
         switch (i) {
             case 0:
                 towerLabel.text = @"A";
+                tower.towerId = @"A";
+                tower.diskNumber = self.diskNumber;
                 break;
                 
             case 1:
                 towerLabel.text = @"B";
+                tower.towerId = @"B";
                 break;
                 
             case 2:
                 towerLabel.text = @"C";
+                tower.towerId = @"C";
                 break;
                 
             default:
@@ -139,7 +133,7 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{// 到分线程去处理算法
         StrongSelf
         if (strongSelf) {
-            [strongSelf hanoiWithDisk:strongSelf.diskNumber towers:@"A" :@"B" :@"C"];
+            [strongSelf hanoiWithDisk:strongSelf.diskNumber towers:[strongSelf.towerArray objectAtIndex:0] :[strongSelf.towerArray objectAtIndex:1] :[strongSelf.towerArray objectAtIndex:2]];
         }
     });
     
@@ -149,7 +143,7 @@
 }
 
 // 移动算法
-- (void)hanoiWithDisk:(NSInteger)diskNumber towers:(NSString *)towerA :(NSString *)towerB :(NSString *)towerC {
+- (void)hanoiWithDisk:(NSInteger)diskNumber towers:(OXTowerView *)towerA :(OXTowerView *)towerB :(OXTowerView *)towerC {
     if (diskNumber == 1) {// 只有一个盘子则直接从A塔移动到C塔
         [self move:1 from:towerA to:towerC];
     } else {
@@ -163,10 +157,10 @@
 }
 
 // 移动过程
-- (void)move:(NSInteger)diskIndex from:(NSString *)fromTower to:(NSString *)toTower {
+- (void)move:(NSInteger)diskIndex from:(OXTowerView *)fromTower to:(OXTowerView *)toTower {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);// 初始化信号量为0
     
-    NSLog(@"第%ld次移动：把%ld号盘从%@移动到%@", ++self.moveCount, diskIndex, fromTower, toTower);
+    NSLog(@"第%ld次移动：把%ld号盘从塔%@移动到塔%@", ++self.moveCount, diskIndex, fromTower.towerId, toTower.towerId);
     
     for (OXDiskModel *disk in self.diskArray) {
         if (disk.index == diskIndex) {
@@ -178,21 +172,10 @@
                     if (strongSelf) {
                         // 改变盘子的位置
                         CGPoint diskCenter = disk.center;
-                        NSInteger towerY = 10;
-                        NSInteger hasDiskHieght = 0;// 已放置了的盘子高度
-                        NSInteger towerHeight = (SCREENHEIGHT - 150)/3 - 40;
+                        NSInteger towerY = 10 + toTower.frame.origin.y;
+                        NSInteger towerHeight = toTower.frame.size.height-15;
                         NSInteger diskHeight = towerHeight / strongSelf.diskNumber;// 每个盘子高度
-                        if ([toTower isEqualToString:@"A"]) {
-                            towerY += [[strongSelf.towerYArray objectAtIndex:0] integerValue];
-                            hasDiskHieght = diskHeight * [[strongSelf.towerCountArray objectAtIndex:0] integerValue];
-                        } else if ([toTower isEqualToString:@"B"]) {
-                            towerY += [[strongSelf.towerYArray objectAtIndex:1] integerValue];
-                            hasDiskHieght = diskHeight * [[strongSelf.towerCountArray objectAtIndex:1] integerValue];
-                        } else if ([toTower isEqualToString:@"C"]) {
-                            towerY += [[strongSelf.towerYArray objectAtIndex:2] integerValue];
-                            hasDiskHieght = diskHeight * [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
-                        }
-                        
+                        NSInteger hasDiskHieght = diskHeight * toTower.diskNumber;// 已放置了的盘子高度
                         diskCenter.y = towerY + (towerHeight - hasDiskHieght) - diskHeight/2;
                         disk.center = diskCenter;
                     }
@@ -202,28 +185,10 @@
                         StrongSelf
                         if (strongSelf) {
                             // 改变fromTower的盘子数量
-                            if ([fromTower isEqualToString:@"A"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:0] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:--count]];
-                            } else if ([fromTower isEqualToString:@"B"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:1] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:--count]];
-                            } else if ([fromTower isEqualToString:@"C"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:--count]];
-                            }
+                            fromTower.diskNumber--;
                             
                             // 改变toTower的盘子数量
-                            if ([toTower isEqualToString:@"A"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:0] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:0 withObject:[NSNumber numberWithInteger:++count]];
-                            } else if ([toTower isEqualToString:@"B"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:1] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:1 withObject:[NSNumber numberWithInteger:++count]];
-                            } else if ([toTower isEqualToString:@"C"]) {
-                                NSInteger count = [[strongSelf.towerCountArray objectAtIndex:2] integerValue];
-                                [strongSelf.towerCountArray replaceObjectAtIndex:2 withObject:[NSNumber numberWithInteger:++count]];
-                            }
+                            toTower.diskNumber++;
                             
                             dispatch_semaphore_signal(sema);// 增加信号量，结束等待
                         }
