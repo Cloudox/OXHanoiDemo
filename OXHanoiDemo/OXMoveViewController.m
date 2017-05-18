@@ -63,7 +63,7 @@
     [self.view addSubview:beginBtn];
 }
 
-// 三根杆子
+// 三座塔
 - (void)initThreeTower {
     // 添加三座塔
     NSInteger height = (SCREENHEIGHT - 150)/3 - 30;
@@ -79,7 +79,7 @@
             case 0:
                 towerLabel.text = @"A";
                 tower.towerId = @"A";
-                tower.diskNumber = self.diskNumber;
+                tower.diskNumber = self.diskNumber;// 一开始盘子都在塔A上
                 break;
                 
             case 1:
@@ -125,9 +125,6 @@
 // 开始移动
 - (void)beginMove {
     self.moveCount = 0;
-    
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    queue.maxConcurrentOperationCount = 1;
     
     WeakSelf
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{// 到分线程去处理算法
