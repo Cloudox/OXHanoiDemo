@@ -12,4 +12,4 @@
 
 详细说明查看[我的博客](http://blog.csdn.net/cloudox_/article/details/72453843)
 
-觉得有意思请加星~
+觉得有意思谢谢加星~
